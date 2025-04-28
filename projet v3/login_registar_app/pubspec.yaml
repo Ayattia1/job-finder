@@ -16,6 +16,11 @@ dependencies:
   svg_flutter: ^0.0.1
   carousel_slider: ^5.0.0
   google_fonts: ^6.2.1
+  url_launcher: ^6.2.4
+  syncfusion_flutter_pdfviewer: ^24.1.41
+  file_picker: ^6.1.1
+  image_picker: ^0.8.5+3
+  http_parser: ^4.0.2
 
 dev_dependencies:
   flutter_test:

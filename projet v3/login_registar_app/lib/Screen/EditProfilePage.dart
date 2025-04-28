@@ -68,7 +68,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _saveUserData() async {
     if (_formKey.currentState!.validate()) {
       final prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('auth_token'); // Get the stored token
+      String? token = prefs.getString('auth_token'); 
 
       // Prepare the data to send
       final data = {
@@ -93,7 +93,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
 
-        // ✅ Update shared preferences with the new user data
         await prefs.setString('first_name', _firstNameController.text);
         await prefs.setString('last_name', _lastNameController.text);
         await prefs.setString('user_email', _emailController.text);
