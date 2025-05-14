@@ -7,6 +7,7 @@ class Job {
   final String employerType;
   final String jobType;
   final String? logoUrl;
+  final String? description;
 
   Job({
     required this.id,
@@ -17,6 +18,7 @@ class Job {
     required this.employerType,
     this.logoUrl,
     required this.jobType,
+    required this.description,
   });
 
   factory Job.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class Job {
       salary: json['salary'] ?? '',
       employerType: json['employer_type'] ?? '',
       jobType: json['job_type']?? '',
+      description: json['description']?? '',
     );
   }
 Map<String, dynamic> toJson() {
@@ -39,6 +42,7 @@ Map<String, dynamic> toJson() {
     'salary': salary,
     'employer_type': employerType,
     'job_type': jobType,
+    'description' : description,
   };
 }
 

@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'AddJobPage.dart';
 import 'UserJobOffersPage.dart';
 import '../components/custom_drawer.dart';
+import 'job_details_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -409,7 +410,18 @@ Widget _buildForYouSection() {
                 itemCount: visibleForYouJobs.length,
                 itemBuilder: (context, index) {
                   final job = visibleForYouJobs[index];
-                  return ItemsJobs(job);
+                  return GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => JobDetailsPage(job: job),
+      ),
+    );
+  },
+  child: ItemsJobs(job),
+);
+
                 },
               ),
               if (_forYouCurrentMaxIndex < forYouJobs.length)
@@ -474,7 +486,18 @@ Widget _buildRecentItems() {
           itemBuilder: (context, index) {
             if (index < visibleJobs.length) {
               final job = visibleJobs[index];
-              return RecentItemsList(job);
+              return GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => JobDetailsPage(job: job),
+      ),
+    );
+  },
+  child: RecentItemsList(job),
+);
+
             } else {
               // This is the "Voir plus" button shown after the last item
               return Padding(
