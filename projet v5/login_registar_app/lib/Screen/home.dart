@@ -1,3 +1,4 @@
+import 'package:login_registar_app/config.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:login_registar_app/components/items_jobs.dart';
@@ -7,7 +8,6 @@ import 'package:svg_flutter/svg_flutter.dart';
 import '../models/job_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:login_registar_app/config.dart';
 import 'profile_page.dart';
 import 'dart:convert';
 import 'AddJobPage.dart';
@@ -31,8 +31,30 @@ class _HomePageState extends State<HomePage> {
   int _currentMaxIndex = 10;
   int _forYouItemsPerPage = 5;
   int _forYouCurrentMaxIndex = 5;
+  bool _isSearching = false;
+  String _searchQuery = '';
+  List<Job> _searchResults = [];
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   Map<String, dynamic>? userData;
+  List<Job> allJobs = [];
+  List<Job> forYouJobs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _verifyToken();
+    fetchAllJobs();
+    fetchForYouJobs();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
 
   Future<void> _verifyToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -64,8 +86,7 @@ class _HomePageState extends State<HomePage> {
             userData = fetchedUserData;
           });
         } catch (e) {
-          _showErrorDialog(
-              'Impossible de charger les données de l\'utilisateur.');
+          _showErrorDialog('Impossible de charger les données de l\'utilisateur.');
         }
       } else {
         setState(() {
@@ -98,9 +119,6 @@ class _HomePageState extends State<HomePage> {
       _isLoading = false;
     });
   }
-
-  List<Job> allJobs = [];
-  List<Job> forYouJobs = [];
 
   Future<void> fetchAllJobs() async {
     final prefs = await SharedPreferences.getInstance();
@@ -135,7 +153,6 @@ class _HomePageState extends State<HomePage> {
         'Accept': 'application/json',
       },
     );
-
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body)['data'] as List;
       setState(() {
@@ -165,6 +182,7 @@ class _HomePageState extends State<HomePage> {
         'Accept': 'application/json',
       },
     );
+    
     List<dynamic> jobPreferences = [];
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body)['data'];
@@ -200,14 +218,6 @@ class _HomePageState extends State<HomePage> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _verifyToken();
-    fetchAllJobs();
-    fetchForYouJobs();
-  }
-
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -222,6 +232,53 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+  }
+
+  void _searchJobs(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _searchResults.clear();
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _searchQuery = query;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    try {
+      final response = await http.get(
+        Uri.parse('${Config.baseUrl}/offres/search?query=$query'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'] as List;
+        setState(() {
+          _searchResults = data.map((jobJson) => Job.fromJson(jobJson)).toList();
+        });
+      } else {
+        _showErrorDialog('Erreur lors de la recherche.');
+      }
+    } catch (e) {
+      _showErrorDialog('Erreur de connexion lors de la recherche.');
+    }
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _isSearching = false;
+      _searchResults.clear();
+    });
   }
 
   @override
@@ -240,10 +297,11 @@ class _HomePageState extends State<HomePage> {
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               _buildCustomAppBar(),
-              _buildWelcomeSection(),
-              _buildForYouSection(),
-              //JobCarousel(forYou),
-              _buildRecentItems(),
+              if (_isSearching) _buildSearchResults() else ...[
+                _buildWelcomeSection(),
+                _buildForYouSection(),
+                _buildRecentItems(),
+              ],
             ],
           ),
         ),
@@ -251,77 +309,84 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  bool _showJobOfferOptions = false;
-
-  Widget _buildDrawerButton(
-    IconData icon,
-    String title,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      margin: const EdgeInsets.symmetric(
-          vertical: 5, horizontal: 0), // avoid extra width
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  blurRadius: 5,
-                  offset: Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color: color,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: color,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+  Widget _buildSearchResults() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Résultats pour "$_searchQuery"',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: secondaryTextColor,
                   ),
                 ),
-              ],
-            ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close, color: Colors.grey),
+                onPressed: _clearSearch,
+              ),
+            ],
           ),
         ),
-      ),
+        if (_searchResults.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(30),
+            child: Center(
+              child: Text(
+                'Aucun résultat trouvé',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _searchResults.length,
+              itemBuilder: (context, index) {
+                final job = _searchResults[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => JobDetailsPage(job: job),
+                      ),
+                    );
+                  },
+                  child: RecentItemsList(job),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _buildCustomAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      child: Row(
-        children: [
-          Builder(
-            builder: (context) => IconButton(
-              icon: SvgPicture.asset(
-                "assets/icons/slider.svg",
-                height: 30,
-                color: primaryColor,
-              ),
-              onPressed: () => Scaffold.of(context).openDrawer(),
+Widget _buildCustomAppBar() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+    child: Row(
+      children: [
+        Builder(
+          builder: (context) => IconButton(
+            icon: SvgPicture.asset(
+              "assets/icons/slider.svg",
+              height: 30,
+              color: primaryColor,
             ),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
+        ),
+        if (!_isSearching) ...[
           Spacer(),
           IconButton(
             icon: SvgPicture.asset(
@@ -329,21 +394,60 @@ class _HomePageState extends State<HomePage> {
               height: 26,
               color: primaryColor,
             ),
-            onPressed: () {},
+            onPressed: () {
+              setState(() {
+                _isSearching = true;
+              });
+              FocusScope.of(context).requestFocus(_searchFocusNode);
+            },
           ),
           SizedBox(width: 15),
-          IconButton(
-            icon: SvgPicture.asset(
-              "assets/icons/filter.svg",
-              height: 26,
-              color: primaryColor,
+        ] else ...[
+          Expanded(
+            child: Container(
+              height: 40,
+              margin: EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor, // Match page background
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.grey.withOpacity(0.3), // Subtle border
+                  width: 1,
+                ),
+              ),
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                decoration: InputDecoration(
+                  hintText: 'Rechercher des emplois...',
+                  border: InputBorder.none,
+                  prefixIcon: Icon(Icons.search, 
+                    color: Colors.grey.withOpacity(0.7),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.close, 
+                      color: Colors.grey.withOpacity(0.7),
+                    ),
+                    onPressed: _clearSearch,
+                  ),
+                  contentPadding: EdgeInsets.symmetric(vertical: 10),
+                  hintStyle: TextStyle(
+                    color: Colors.grey.withOpacity(0.7),
+                  ),
+                ),
+                style: TextStyle(
+                  color: Colors.grey[800], // Text color
+                ),
+                onChanged: _searchJobs,
+                onSubmitted: _searchJobs,
+              ),
             ),
-            onPressed: () {},
           ),
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 
   Widget _buildWelcomeSection() {
     return Padding(
@@ -373,162 +477,154 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-Widget _buildForYouSection() {
-  List<Job> visibleForYouJobs =
-      forYouJobs.take(_forYouCurrentMaxIndex).toList();
+  Widget _buildForYouSection() {
+    List<Job> visibleForYouJobs = forYouJobs.take(_forYouCurrentMaxIndex).toList();
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.only(left: 30, bottom: 15, right: 30),
-        child: Text(
-          "Pour toi",
-          style: TextStyle(
-            fontSize: 20,
-            color: secondaryTextColor,
-            fontWeight: FontWeight.w600,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 30, bottom: 15, right: 30),
+          child: Text(
+            "Pour toi",
+            style: TextStyle(
+              fontSize: 20,
+              color: secondaryTextColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
-      ),
-      if (forYouJobs.isEmpty)
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 30),
-          child: Text(
-            "Aucune offre recommandée pour le moment.",
-            style: TextStyle(color: Colors.grey),
-          ),
-        )
-      else
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            children: [
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: visibleForYouJobs.length,
-                itemBuilder: (context, index) {
-                  final job = visibleForYouJobs[index];
-                  return GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => JobDetailsPage(job: job),
-      ),
-    );
-  },
-  child: ItemsJobs(job),
-);
-
-                },
-              ),
-              if (_forYouCurrentMaxIndex < forYouJobs.length)
-                Center(
-                  //alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _forYouCurrentMaxIndex = (_forYouCurrentMaxIndex +
-                                _forYouItemsPerPage)
-                            .clamp(0, forYouJobs.length);
-                      });
-                    },
-                    child: Text(
-                      "Voir plus",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: secondaryColor,
+        if (forYouJobs.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 30),
+            child: Text(
+              "Aucune offre recommandée pour le moment.",
+              style: TextStyle(color: Colors.grey),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: visibleForYouJobs.length,
+                  itemBuilder: (context, index) {
+                    final job = visibleForYouJobs[index];
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => JobDetailsPage(job: job),
+                          ),
+                        );
+                      },
+                      child: ItemsJobs(job),
+                    );
+                  },
+                ),
+                if (_forYouCurrentMaxIndex < forYouJobs.length)
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _forYouCurrentMaxIndex =
+                              (_forYouCurrentMaxIndex + _forYouItemsPerPage)
+                                  .clamp(0, forYouJobs.length);
+                        });
+                      },
+                      child: Text(
+                        "Voir plus",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: secondaryColor,
+                        ),
                       ),
                     ),
                   ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRecentItems() {
+    List<Job> visibleJobs = allJobs.take(_currentMaxIndex).toList();
+    final bool hasMore = _currentMaxIndex < allJobs.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Récentes",
+                style: TextStyle(
+                  fontSize: 20,
+                  color: secondaryTextColor,
+                  fontWeight: FontWeight.w600,
                 ),
+              ),
             ],
           ),
         ),
-    ],
-  );
-}
-
-
-
-Widget _buildRecentItems() {
-  List<Job> visibleJobs = allJobs.take(_currentMaxIndex).toList();
-  final bool hasMore = _currentMaxIndex < allJobs.length;
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Récentes",
-              style: TextStyle(
-                fontSize: 20,
-                color: secondaryTextColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: ListView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: hasMore ? visibleJobs.length + 1 : visibleJobs.length,
-          itemBuilder: (context, index) {
-            if (index < visibleJobs.length) {
-              final job = visibleJobs[index];
-              return GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => JobDetailsPage(job: job),
-      ),
-    );
-  },
-  child: RecentItemsList(job),
-);
-
-            } else {
-              // This is the "Voir plus" button shown after the last item
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Center(
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _currentMaxIndex = (_currentMaxIndex + _itemsPerPage)
-                            .clamp(0, allJobs.length);
-                      });
-                    },
-                    child: Text(
-                      "Voir plus",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: secondaryColor,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: hasMore ? visibleJobs.length + 1 : visibleJobs.length,
+            itemBuilder: (context, index) {
+              if (index < visibleJobs.length) {
+                final job = visibleJobs[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => JobDetailsPage(job: job),
+                      ),
+                    );
+                  },
+                  child: RecentItemsList(job),
+                );
+              } else {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Center(
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _currentMaxIndex = (_currentMaxIndex + _itemsPerPage)
+                              .clamp(0, allJobs.length);
+                        });
+                      },
+                      child: Text(
+                        "Voir plus",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: secondaryColor,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            }
-          },
+                );
+              }
+            },
+          ),
         ),
-      ),
-    ],
-  );
-}
-
+      ],
+    );
+  }
 }
 
 class JobCarousel extends StatelessWidget {

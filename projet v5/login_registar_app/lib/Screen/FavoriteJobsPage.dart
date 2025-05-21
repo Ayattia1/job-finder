@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:login_registar_app/models/job_model.dart';
 import 'package:login_registar_app/components/items_jobs.dart';
+import 'job_details_page.dart';
 
 class FavoriteJobsPage extends StatefulWidget {
   const FavoriteJobsPage({super.key});
@@ -55,12 +56,22 @@ class _FavoriteJobsPageState extends State<FavoriteJobsPage> {
               padding: const EdgeInsets.all(20),
               itemCount: favoriteJobs.length,
               itemBuilder: (context, index) {
-                return ItemsJobs(
-  favoriteJobs[index],
-  isFavorite: true,
-  onFavoriteToggle: () => toggleFavorite(favoriteJobs[index]),
-);
-
+                final job = favoriteJobs[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => JobDetailsPage(job: job),
+                      ),
+                    );
+                  },
+                  child: ItemsJobs(
+                    job,
+                    isFavorite: true,
+                    onFavoriteToggle: () => toggleFavorite(job),
+                  ),
+                );
               },
             ),
     );

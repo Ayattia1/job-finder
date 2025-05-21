@@ -47,6 +47,7 @@ Future<void> _login() async {
       final String token = responseData['token'];
       final responseBody = jsonDecode(response.body);
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('user_id', responseBody['user']['id']);
       await prefs.setString('first_name', responseBody['user']['first_name']);
       await prefs.setString('last_name', responseBody['user']['last_name']);
       await prefs.setString('user_email', responseBody['user']['email']);
@@ -55,7 +56,6 @@ Future<void> _login() async {
       await prefs.setString('user_address', responseBody['user']['address']);
       await prefs.setString('user_joined', responseBody['user']['created_at']);
       await prefs.setString('auth_token', token);
-
       if (!mounted) return;
 
       Navigator.pushReplacementNamed(context, '/home');

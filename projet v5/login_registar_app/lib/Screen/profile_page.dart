@@ -24,7 +24,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showCVOptions(String cvFileName) {
-    final cvUrl = 'http://192.168.1.19:8001/storage/$cvFileName';
+    final cvUrl = '${Config.baseStorageUrl}/$cvFileName';
 
     showDialog(
       context: context,
@@ -64,7 +64,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<Map<String, dynamic>> _fetchUserData() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
-
     final response = await http.get(
       Uri.parse('${Config.baseUrl}/details'),
       headers: {
