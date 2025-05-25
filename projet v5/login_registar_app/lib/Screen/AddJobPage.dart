@@ -47,7 +47,7 @@ class _AddJobPageState extends State<AddJobPage> {
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize controllers
     _deadlineController = TextEditingController();
     _companyNameCt = TextEditingController();
@@ -66,60 +66,62 @@ class _AddJobPageState extends State<AddJobPage> {
     });
   }
 
-void _initializeFormWithJobData() {
-  final job = widget.job!;
-  setState(() {
-    employerType = job['employer_type'] ?? 'entreprise';
-    companyName = job['company_name']?.toString();
-    companyDescription = job['company_description']?.toString();
-    companyWebsite = job['company_website']?.toString();
-    jobTitle = job['job_title']?.toString();
-    jobDescription = job['job_description']?.toString();
-    jobLocationType = job['job_location_type']?.toString() ?? 'sur site';
-    jobLocation = job['job_location']?.toString();
-    salary = job['salary']?.toString();
-    jobType = job['job_type']?.toString() ?? 'Temps plein';
-    contactEmail = job['contact_email']?.toString();
+  void _initializeFormWithJobData() {
+    final job = widget.job!;
+    setState(() {
+      employerType = job['employer_type'] ?? 'entreprise';
+      companyName = job['company_name']?.toString();
+      companyDescription = job['company_description']?.toString();
+      companyWebsite = job['company_website']?.toString();
+      jobTitle = job['job_title']?.toString();
+      jobDescription = job['job_description']?.toString();
+      jobLocationType = job['job_location_type']?.toString() ?? 'sur site';
+      jobLocation = job['job_location']?.toString();
+      salary = job['salary']?.toString();
+      jobType = job['job_type']?.toString() ?? 'Temps plein';
+      contactEmail = job['contact_email']?.toString();
 
-    // Match category by name or use ID
-    if (job.containsKey('category_name')) {
-      final matched = _categories.firstWhere(
-        (cat) => cat['name'] == job['category_name'],
-        orElse: () => {},
-      );
-      if (matched.isNotEmpty) {
-        categoryId = matched['id'].toString();
-      }
-    } else if (job.containsKey('category_id')) {
-      categoryId = job['category_id'].toString();
-    }
-
-    _companyNameCt.text = companyName ?? '';
-    _companyDescCt.text = companyDescription ?? '';
-    _companyWebCt.text = companyWebsite ?? '';
-    _jobTitleCt.text = jobTitle ?? '';
-    _jobDescCt.text = jobDescription ?? '';
-    _jobLocationCt.text = jobLocation ?? '';
-    _salaryCt.text = salary ?? '';
-    _contactEmailCt.text = contactEmail ?? '';
-
-    if (job['application_deadline'] != null) {
-      try {
-        applicationDeadline = DateTime.tryParse(job['application_deadline'].toString());
-        if (applicationDeadline != null) {
-          _deadlineController.text = DateFormat('yyyy-MM-dd').format(applicationDeadline!);
+      // Match category by name or use ID
+      if (job.containsKey('category_name')) {
+        final matched = _categories.firstWhere(
+          (cat) => cat['name'] == job['category_name'],
+          orElse: () => {},
+        );
+        if (matched.isNotEmpty) {
+          categoryId = matched['id'].toString();
         }
-      } catch (_) {
-        applicationDeadline = null;
+      } else if (job.containsKey('category_id')) {
+        categoryId = job['category_id'].toString();
       }
-    }
-  });
-}
 
+      _companyNameCt.text = companyName ?? '';
+      _companyDescCt.text = companyDescription ?? '';
+      _companyWebCt.text = companyWebsite ?? '';
+      _jobTitleCt.text = jobTitle ?? '';
+      _jobDescCt.text = jobDescription ?? '';
+      _jobLocationCt.text = jobLocation ?? '';
+      _salaryCt.text = salary ?? '';
+      _contactEmailCt.text = contactEmail ?? '';
+
+      if (job['application_deadline'] != null) {
+        try {
+          applicationDeadline =
+              DateTime.tryParse(job['application_deadline'].toString());
+          if (applicationDeadline != null) {
+            _deadlineController.text =
+                DateFormat('yyyy-MM-dd').format(applicationDeadline!);
+          }
+        } catch (_) {
+          applicationDeadline = null;
+        }
+      }
+    });
+  }
 
   Future<void> _fetchCategories() async {
     try {
-      final response = await http.get(Uri.parse('${Config.baseUrl}/categories'));
+      final response =
+          await http.get(Uri.parse('${Config.baseUrl}/categories'));
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -149,7 +151,7 @@ void _initializeFormWithJobData() {
     _jobLocationCt.clear();
     _salaryCt.clear();
     _contactEmailCt.clear();
-    
+
     setState(() {
       employerType = null;
       companyName = null;
@@ -222,15 +224,17 @@ void _initializeFormWithJobData() {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.job != null 
-              ? 'Job offer updated successfully!' 
-              : 'Job offer added successfully!')),
+          SnackBar(
+              content: Text(widget.job != null
+                  ? 'Job offer updated successfully!'
+                  : 'Job offer added successfully!')),
         );
         Navigator.pop(context);
       } else {
         final errors = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${errors['message'] ?? 'Unknown error'}')),
+          SnackBar(
+              content: Text('Error: ${errors['message'] ?? 'Unknown error'}')),
         );
       }
     } catch (e) {
@@ -260,10 +264,12 @@ void _initializeFormWithJobData() {
     final showCompanyFields = employerType == 'entreprise';
 
     return Scaffold(
-appBar: AppBar(
-  title: Text(widget.job != null ? 'Modifier une offre d\'emploi' : 'Ajouter une offre d\'emploi'),
-  backgroundColor: const Color.fromARGB(255, 148, 91, 248),
-),
+      appBar: AppBar(
+        title: Text(widget.job != null
+            ? 'Modifier une offre d\'emploi'
+            : 'Ajouter une offre d\'emploi'),
+        backgroundColor: const Color.fromARGB(255, 148, 91, 248),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -273,117 +279,141 @@ appBar: AppBar(
                 child: Column(
                   children: [
                     DropdownButtonFormField<String>(
-                       decoration: const InputDecoration(labelText: 'Type d\'employeur'),
+                      decoration:
+                          const InputDecoration(labelText: 'Type d\'employeur'),
                       value: employerType,
                       items: ['entreprise', 'recruteur'].map((type) {
                         return DropdownMenuItem(value: type, child: Text(type));
                       }).toList(),
                       onChanged: (val) => setState(() => employerType = val),
-                      validator: (val) => val == null ? 'This field is required' : null,
+                      validator: (val) =>
+                          val == null ? 'Ce champ est obligatoire' : null,
                     ),
-
                     if (showCompanyFields) ...[
                       TextFormField(
                         controller: _companyNameCt,
-                        decoration: const InputDecoration(labelText: 'Nom de l\'entreprise'),
+                        decoration: const InputDecoration(
+                            labelText: 'Nom de l\'entreprise'),
                         onSaved: (val) => companyName = val,
                       ),
                       TextFormField(
                         controller: _companyDescCt,
-                        decoration: const InputDecoration(labelText: 'Description de l\'entreprise'),
+                        decoration: const InputDecoration(
+                            labelText: 'Description de l\'entreprise'),
                         onSaved: (val) => companyDescription = val,
                       ),
                       TextFormField(
                         controller: _companyWebCt,
-                        decoration: const InputDecoration(labelText: 'Site web'),
+                        decoration:
+                            const InputDecoration(labelText: 'Site web'),
                         onSaved: (val) => companyWebsite = val,
                       ),
                     ],
-
                     DropdownButtonFormField<String>(
                       value: categoryId,
                       isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Category'),
+                      decoration: const InputDecoration(labelText: 'Catégorie'),
                       items: _categories
                           .map<DropdownMenuItem<String>>(
                             (cat) => DropdownMenuItem(
                               value: cat['id'].toString(),
-                              child: Text(cat['name'], overflow: TextOverflow.ellipsis),
+                              child: Text(cat['name'],
+                                  overflow: TextOverflow.ellipsis),
                             ),
                           )
                           .toList(),
                       onChanged: (value) => setState(() => categoryId = value),
-                      validator: (value) => value == null ? 'Veuillez sélectionner une catégorie' : null,
+                      validator: (value) => value == null
+                          ? 'Veuillez sélectionner une catégorie'
+                          : null,
                     ),
                     TextFormField(
                       controller: _jobTitleCt,
-                      decoration: const InputDecoration(labelText: 'Titre du poste'),
-                      validator: (val) => val!.isEmpty ? 'This field is required' : null,
+                      decoration:
+                          const InputDecoration(labelText: 'Titre du poste'),
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Ce champ est obligatoire'
+                          : null,
                       onSaved: (val) => jobTitle = val,
                     ),
                     TextFormField(
                       controller: _jobDescCt,
-                      decoration: const InputDecoration(labelText: 'Description du poste'),
+                      decoration: const InputDecoration(
+                          labelText: 'Description du poste'),
                       maxLines: 4,
-                      validator: (val) => val!.isEmpty ? 'This field is required' : null,
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Ce champ est obligatoire'
+                          : null,
                       onSaved: (val) => jobDescription = val,
                     ),
                     DropdownButtonFormField<String>(
                       value: jobLocationType,
-                      decoration: const InputDecoration(labelText: 'Type de lieu de travail'),
+                      decoration: const InputDecoration(
+                          labelText: 'Type de lieu de travail'),
                       items: ['sur site', 'téletravail', 'hybride'].map((type) {
                         return DropdownMenuItem(value: type, child: Text(type));
                       }).toList(),
                       onChanged: (val) => setState(() => jobLocationType = val),
-                      validator: (val) => val == null ? 'This field is required' : null,
+                      validator: (val) =>
+                          val == null ? 'Ce champ est obligatoire' : null,
                     ),
                     TextFormField(
                       controller: _jobLocationCt,
-                      decoration: const InputDecoration(labelText: 'Location'),
-                      validator: (val) => val!.isEmpty ? 'This field is required' : null,
+                      decoration: const InputDecoration(labelText: 'Lieu'),
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Ce champ est obligatoire'
+                          : null,
                       onSaved: (val) => jobLocation = val,
-                    ),
-                    TextFormField(
-                      controller: _salaryCt,
-                      decoration: const InputDecoration(labelText: 'Salaire'),
-                      keyboardType: TextInputType.number,
-                      onSaved: (val) => salary = val,
                     ),
                     DropdownButtonFormField<String>(
                       value: jobType,
-                      decoration: const InputDecoration(labelText: 'Type d\'emploi'),
-                      items: ['Temps plein', 'Temps partiel', 'Contrat', 'Travail journalier']
-                          .map((type) {
+                      decoration:
+                          const InputDecoration(labelText: 'Type d\'emploi'),
+                      items: [
+                        'Temps plein',
+                        'Temps partiel',
+                        'Contrat',
+                        'Travail journalier'
+                      ].map((type) {
                         return DropdownMenuItem(value: type, child: Text(type));
                       }).toList(),
                       onChanged: (val) => setState(() => jobType = val),
-                      validator: (val) => val == null ? 'This field is required' : null,
+                      validator: (val) =>
+                          val == null ? 'Ce champ est obligatoire' : null,
                     ),
                     TextFormField(
                       controller: _deadlineController,
-                      decoration: const InputDecoration(labelText: 'Date limite de candidature'),
+                      decoration: const InputDecoration(
+                          labelText: 'Date limite de candidature'),
                       readOnly: true,
                       onTap: () async {
                         DateTime? picked = await showDatePicker(
                           context: context,
                           initialDate: applicationDeadline ?? DateTime.now(),
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate:
+                              DateTime.now().add(const Duration(days: 365)),
                         );
                         if (picked != null) {
                           setState(() {
                             applicationDeadline = picked;
-                            _deadlineController.text = DateFormat('yyyy-MM-dd').format(picked);
+                            _deadlineController.text =
+                                DateFormat('yyyy-MM-dd').format(picked);
                           });
                         }
                       },
-                      validator: (val) => val!.isEmpty ? 'This field is required' : null,
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Ce champ est obligatoire'
+                          : null,
                     ),
                     TextFormField(
                       controller: _contactEmailCt,
-                      decoration: const InputDecoration(labelText: 'Email de contact'),
+                      decoration:
+                          const InputDecoration(labelText: 'Email de contact'),
                       keyboardType: TextInputType.emailAddress,
-                      validator: (val) => val!.isEmpty ? 'This field is required' : null,
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Ce champ est obligatoire'
+                          : null,
                       onSaved: (val) => contactEmail = val,
                     ),
                     const SizedBox(height: 20),
@@ -398,7 +428,7 @@ appBar: AppBar(
                               side: const BorderSide(color: Colors.deepPurple),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10)),
                             ),
                           ),
                         ),
@@ -407,14 +437,19 @@ appBar: AppBar(
                           child: ElevatedButton(
                             onPressed: _isSubmitting ? null : _submitJobOffer,
                             child: _isSubmitting
-                                ? const CircularProgressIndicator(color: Colors.white)
-                                : Text(widget.job != null ? 'Mettre à jour' : 'Soumettre',
-                                    style: const TextStyle(color: Colors.white)),
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                : Text(
+                                    widget.job != null
+                                        ? 'Mettre à jour'
+                                        : 'Soumettre',
+                                    style:
+                                        const TextStyle(color: Colors.white)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.deepPurple,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10)),
                             ),
                           ),
                         ),

@@ -194,7 +194,7 @@ class _HomePageState extends State<HomePage> {
       }
       return {
         'avatarUrl': data['profile_picture'] != null
-            ? 'http://192.168.1.19:8001/storage/${data['profile_picture']}'
+            ? '${Config.baseStorageUrl}/${data['profile_picture']}'
             : 'https://randomuser.me/api/portraits/men/1.jpg',
         'joined': prefs.getString('user_joined') ?? 'Date inconnue',
         'bio': data['bio'] ?? 'Pas de biographie',
