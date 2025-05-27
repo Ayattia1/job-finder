@@ -66,6 +66,10 @@ Route::get('/user/{id}/profile', [userController::class, 'getUserProfile'])->mid
 Route::get('/offres/search', [JobController::class, 'search'])->middleware('auth:sanctum');
 Route::post('logout',[userController::class,'logout'])->middleware('auth:sanctum');
 Route::get('/verifyMail/{token}', [userController::class,'verify']);
+Route::post('/password/request-reset', [userController::class, 'requestPasswordReset']);
+Route::post('/password/verify-code', [userController::class, 'verifyResetCode']);
+Route::post('/password/reset', [userController::class, 'resetPassword']);
+
 Route::middleware('auth:sanctum')->get('/verify-token', function (Request $request) {
     return response()->json(['message' => 'Token is valid'], 200);
 });

@@ -14,6 +14,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Password;
+use App\Mail\ResetPasswordCode;
+use App\Mail\NewPasswordMail;
 class userController extends Controller
 {
     protected $model;
@@ -268,6 +274,76 @@ public function getUserProfile($userId)
     ], 200);
 }
 
+public function requestPasswordReset(Request $request)
+{
+    $request->validate(['email' => 'required|email']);
+
+    $user = User::where('email', $request->email)->first();
+    if (!$user) {
+        return response()->json(['message' => 'Si cet e-mail est enregistré, des instructions ont été envoyées.'], 200);
+    }
+
+    $code = rand(100000, 999999);
+    DB::table('password_resets')->updateOrInsert(
+        ['email' => $user->email],
+        ['token' => $code, 'created_at' => now()]
+    );
+
+    Mail::to($user->email)->send(new ResetPasswordCode($code));
+
+    return response()->json(['message' => 'Code envoyé si l\'e-mail est enregistré.'], 200);
+}
+
+public function verifyResetCode(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'code' => 'required'
+    ]);
+
+    $record = DB::table('password_resets')
+        ->where('email', $request->email)
+        ->where('token', $request->code)
+        ->first();
+
+    if (!$record || Carbon::parse($record->created_at)->addMinutes(10)->isPast()) {
+        return response()->json(['message' => 'Code invalide ou expiré.'], 400);
+    }
+
+    return response()->json(['message' => 'Code vérifié.'], 200);
+}
+
+public function resetPassword(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'code' => 'required'
+    ]);
+
+    $record = DB::table('password_resets')
+        ->where('email', $request->email)
+        ->where('token', $request->code)
+        ->first();
+
+    if (!$record || Carbon::parse($record->created_at)->addMinutes(10)->isPast()) {
+        return response()->json(['message' => 'Code invalide ou expiré.'], 400);
+    }
+
+    $user = User::where('email', $request->email)->first();
+    if (!$user) {
+        return response()->json(['message' => 'Utilisateur non trouvé.'], 404);
+    }
+
+    $newPassword = Str::random(10);
+    $user->password = Hash::make($newPassword);
+    $user->save();
+
+    DB::table('password_resets')->where('email', $request->email)->delete();
+
+    Mail::to($user->email)->send(new NewPasswordMail($newPassword));
+
+    return response()->json(['message' => 'Nouveau mot de passe envoyé.'], 200);
+}
 
     /**
      * Remove the specified resource from storage.

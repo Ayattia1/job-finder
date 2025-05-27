@@ -11,7 +11,7 @@
             <div class="col-sm-6">
                 <div class="breadcrumbs-area clearfix">
                     <ul class="breadcrumbs pull-left">
-                        <li><a href="index.html">Accueil</a></li>
+                        <li><a href="">Accueil</a></li>
                         <li><span>Tableau de Bord</span></li>
                     </ul>
                 </div>

@@ -26,62 +26,61 @@ class EmployeursController extends Controller
         return view('backend.pages.users.employeur.index', compact('employeurs', 'status'));
     }
 
-public function updateStatus(Request $request, $id)
-{
-    $this->checkAuthorization(auth()->user(), ['employeur.status']);
+    public function updateStatus(Request $request, $id)
+    {
+        $this->checkAuthorization(auth()->user(), ['employeur.status']);
 
-    $employeur = Employeur::findOrFail($id);
-    $oldStatus = $employeur->status;
+        $employeur = Employeur::findOrFail($id);
+        $oldStatus = $employeur->status;
 
-    $employeur->status = $request->input('status');
-    $employeur->note = $request->input('note');
-    $employeur->save();
+        $employeur->status = $request->input('status');
+        $employeur->note = $request->input('note');
+        $employeur->save();
 
-    // ✅ Send notification to employer (offer poster)
-if ($employeur->user_id) {
-    $body = 'Le statut de votre offre "' . $employeur->job_title . '" a été mis à jour à "' . $employeur->status . '".';
+        if ($employeur->user_id) {
+            $body = 'Le statut de votre offre "' . $employeur->job_title . '" a été mis à jour à "' . $employeur->status . '".';
 
-    if ($employeur->status === 'rejected' && $employeur->note) {
-        $body .= ' Raison: ' . $employeur->note;
-    }
+            if ($employeur->status === 'rejected' && $employeur->note) {
+                $body .= ' Raison: ' . $employeur->note;
+            }
 
-    \App\Models\Notification::create([
-        'user_id' => $employeur->user_id,
-        'title' => 'Mise à jour de votre offre',
-        'body'  => $body,
-        'type'  => 'job_offre',
-        'data'  => json_encode([
-            'job_id' => $employeur->id,
-            'new_status' => $employeur->status,
-        ]),
-    ]);
-}
+            \App\Models\Notification::create([
+                'user_id' => $employeur->user_id,
+                'title' => 'Mise à jour de votre offre',
+                'body'  => $body,
+                'type'  => 'job_offre',
+                'data'  => json_encode([
+                    'job_id' => $employeur->id,
+                    'new_status' => $employeur->status,
+                ]),
+            ]);
+        }
 
 
-    if ($oldStatus !== 'accepted' && $employeur->status === 'accepted') {
-        if ($employeur->category_job_id) {
-            $matchingCandidates = \App\Models\candidat::where('category_id', $employeur->category_job_id)->get();
+        if ($oldStatus !== 'accepted' && $employeur->status === 'accepted') {
+            if ($employeur->category_job_id) {
+                $matchingCandidates = \App\Models\candidat::where('category_id', $employeur->category_job_id)->get();
 
-            foreach ($matchingCandidates as $candidate) {
-                // Avoid notifying the same user if they're also a candidate
-                if ($candidate->user_id && $candidate->user_id !== $employeur->user_id) {
-                    \App\Models\Notification::create([
-                        'user_id' => $candidate->user_id,
-                        'title' => 'Nouvelle offre d\'emploi disponible',
-                        'body' => 'Une nouvelle offre "' . $employeur->job_title . '" correspondant à votre catégorie est maintenant disponible.',
-                        'type' => 'new_job',
-                        'data' => json_encode([
-                            'job_id' => $employeur->id,
-                            'category_id' => $employeur->category_job_id,
-                        ]),
-                    ]);
+                foreach ($matchingCandidates as $candidate) {
+                    // Avoid notifying the same user if they're also a candidate
+                    if ($candidate->user_id && $candidate->user_id !== $employeur->user_id) {
+                        \App\Models\Notification::create([
+                            'user_id' => $candidate->user_id,
+                            'title' => 'Nouvelle offre d\'emploi disponible',
+                            'body' => 'Une nouvelle offre "' . $employeur->job_title . '" correspondant à votre catégorie est maintenant disponible.',
+                            'type' => 'new_job',
+                            'data' => json_encode([
+                                'job_id' => $employeur->id,
+                                'category_id' => $employeur->category_job_id,
+                            ]),
+                        ]);
+                    }
                 }
             }
         }
-    }
 
-    return redirect()->route('admin.employeurs.index')->with('success', 'Statut mis à jour avec succès.');
-}
+        return redirect()->route('admin.employeurs.index')->with('success', 'Statut mis à jour avec succès.');
+    }
 
 
 
