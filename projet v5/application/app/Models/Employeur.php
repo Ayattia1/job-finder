@@ -36,4 +36,8 @@ class Employeur extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function requests()
+{
+    return $this->hasMany(Request::class, 'job_id');
+}
 }

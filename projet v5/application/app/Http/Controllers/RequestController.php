@@ -144,49 +144,56 @@ public function userRequests()
 
         return response()->json(['message' => 'Votre candidature a été annulée avec succès.'], 200);
     }
-    public function requestsForJob($jobId)
-    {
-        $authUser = auth('sanctum')->user();
+public function requestsForJob($jobId)
+{
+    $authUser = auth('sanctum')->user();
 
-        // Check if the authenticated user is the employer who owns the job
-        $job = Employeur::where('id', $jobId)
-            ->where('user_id', $authUser->id)
-            ->first();
+    // Verify that the logged-in user is the employer who owns the job
+    $job = Employeur::where('id', $jobId)
+        ->where('user_id', $authUser->id)
+        ->first();
 
-        if (!$job) {
-            return response()->json(['message' => 'Offre non trouvée ou non autorisée.'], 403);
-        }
-
-        // Get all requests with user and message
-        $requests = JobRequest::where('job_id', $jobId)
-            ->with(['user', 'conversationBase.messages' => function ($q) {
-                $q->latest()->limit(1);
-            }])
-
-            ->get()
-            ->map(function ($req) use ($jobId) {
-                $firstName = $req->user->first_name ?? '';
-                $lastName = $req->user->last_name ?? '';
-                $fullName = trim($firstName . ' ' . $lastName);
-
-                $latestMessage = $req->conversationBase
-                    && $req->conversationBase->employer_id == $req->employer_id
-                    ? $req->conversationBase->messages->first()->content ?? null
-                    : null;
-
-                return [
-                    'req'=>$req,
-                    'user_id' => $req->user->id ?? '',
-                    'user_name' => $fullName ?: 'Inconnu',
-                    'message' => $latestMessage ?? 'Pas de message',
-                    'created_at' =>$req->created_at,
-                ];
-            });
-
-
-
-        return response()->json(['data' => $requests], 200);
+    if (!$job) {
+        return response()->json(['message' => 'Offre non trouvée ou non autorisée.'], 403);
     }
+
+    // Load job requests with user and latest message in conversation
+    $requests = JobRequest::where('job_id', $jobId)
+        ->with(['user', 'conversationBase.messages' => function ($q) {
+            $q->latest()->limit(1);
+        }])
+        ->get()
+        ->map(function ($req) use ($authUser) {
+            $firstName = $req->user->first_name ?? '';
+            $lastName = $req->user->last_name ?? '';
+            $fullName = trim($firstName . ' ' . $lastName);
+
+            $latestMessage = null;
+
+            if ($req->conversationBase) {
+                $conversation = $req->conversationBase;
+
+                // Check if the authenticated user is either the employer or candidate in the conversation
+                if (
+                    $conversation->employer_id == $authUser->id ||
+                    $conversation->user_id == $authUser->id
+                ) {
+                    $latestMessage = $conversation->messages->first()->content ?? null;
+                }
+            }
+
+            return [
+                'req' => $req,
+                'user_id' => $req->user->id ?? '',
+                'user_name' => $fullName ?: 'Inconnu',
+                'message' => $latestMessage ,
+                'created_at' => $req->created_at,
+            ];
+        });
+
+    return response()->json(['data' => $requests], 200);
+}
+
 
     /**
  * Respond to a job request (accept or reject)
@@ -211,12 +218,12 @@ public function respondToRequest($requestId, Request $request)
     $jobRequest->update(['status' => $status]);
 
     // Create a conversation if accepted
-    if ($status === 'accepted') {
+   /* if ($status === 'accepted') {
         Conversation::firstOrCreate([
             'user_id' => $jobRequest->user_id,
             'employer_id' => $jobRequest->employer_id,
         ]);
-    }
+    }*/
 
     \App\Models\Notification::create([
         'user_id' => $jobRequest->user_id,

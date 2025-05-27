@@ -159,42 +159,56 @@ class userController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request)
-    {
-        // Get the currently authenticated user
-        $user = auth('sanctum')->user();
+public function update(Request $request)
+{
+    $user = auth('sanctum')->user();
 
-        if (!$user) {
-            return response()->json([
-                'message' => 'Utilisateur non authentifié.',
-            ], 401);
-        }
-
-        // Validate the request
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'num' => 'required|numeric',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
-        ]);
-
-        // Update user attributes
-        $user->update([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'num' => $request->num,
-            'email' => $request->email,
-            'address' => $request->address,
-            'city' => $request->city,
-        ]);
-
+    if (!$user) {
         return response()->json([
-            'message' => 'Informations utilisateur mises à jour avec succès.',
-            'user' => $user
-        ], 200);
+            'message' => 'Utilisateur non authentifié.',
+        ], 401);
     }
+
+    // Validate the request
+    $validatedData = $request->validate([
+        'first_name' => 'required|string|max:255',
+        'last_name' => 'required|string|max:255',
+        'num' => 'required|numeric',
+        'email' => 'required|email|unique:users,email,' . $user->id,
+        'address' => 'required|string|max:255',
+        'city' => 'required|string|max:255',
+        'current_password' => 'required|string',
+        'password' => 'nullable|string|min:8|confirmed',
+    ]);
+
+    // Check current password
+    if (!\Hash::check($request->current_password, $user->password)) {
+        return response()->json([
+            'message' => 'Mot de passe actuel incorrect.',
+        ], 403);
+    }
+
+    // Update user details
+    $user->first_name = $validatedData['first_name'];
+    $user->last_name = $validatedData['last_name'];
+    $user->num = $validatedData['num'];
+    $user->email = $validatedData['email'];
+    $user->address = $validatedData['address'];
+    $user->city = $validatedData['city'];
+
+    // Update password if new one is provided
+    if (!empty($request->password)) {
+        $user->password = bcrypt($request->password);
+    }
+
+    $user->save();
+
+    return response()->json([
+        'message' => 'Profil mis à jour avec succès.',
+        'user' => $user
+    ], 200);
+}
+
 
 /**
  * Get user profile data for employer view
