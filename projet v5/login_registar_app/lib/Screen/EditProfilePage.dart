@@ -17,6 +17,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
+  final TextEditingController _currentPasswordController = TextEditingController();
+final TextEditingController _newPasswordController = TextEditingController();
+final TextEditingController _confirmPasswordController = TextEditingController();
+
+
   // Declare _selectedCity and list of cities
   String? _selectedCity;
   final List<String> _cities = [
@@ -71,14 +76,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
       String? token = prefs.getString('auth_token'); 
 
       // Prepare the data to send
-      final data = {
-        'first_name': _firstNameController.text,
-        'last_name': _lastNameController.text,
-        'email': _emailController.text,
-        'num': _phoneController.text,
-        'address': _addressController.text,
-        'city': _selectedCity ?? '',
-      };
+final data = {
+  'first_name': _firstNameController.text,
+  'last_name': _lastNameController.text,
+  'email': _emailController.text,
+  'num': _phoneController.text,
+  'address': _addressController.text,
+  'city': _selectedCity ?? '',
+  'current_password': _currentPasswordController.text,
+  'password': _newPasswordController.text,
+  'password_confirmation': _confirmPasswordController.text,
+};
+
 
       // Send PUT request to Laravel API
       final response = await http.put(
@@ -131,6 +140,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
               _buildTextField("Email", _emailController),
               _buildTextField("Téléphone", _phoneController),
               _buildTextField("Adresse", _addressController),
+              _buildPasswordField("Mot de passe actuel", _currentPasswordController, obscure: true),
+_buildPasswordField("Nouveau mot de passe (optionnel)", _newPasswordController, obscure: true),
+_buildPasswordField("Confirmer le nouveau mot de passe", _confirmPasswordController, obscure: true),
+
 
               // City Dropdown
               Padding(
@@ -198,4 +211,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
     );
   }
+
+  Widget _buildPasswordField(String label, TextEditingController controller, {bool obscure = false}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(),
+      ),
+      validator: (value) {
+        if (label.contains('actuel') && (value == null || value.isEmpty)) {
+          return 'Veuillez entrer $label';
+        }
+        return null;
+      },
+    ),
+  );
+}
+
 }

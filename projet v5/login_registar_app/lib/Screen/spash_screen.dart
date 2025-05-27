@@ -43,17 +43,18 @@ class MySplashScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      "Discover your\nDream job Here",
+                      "Trouvez le métier\nde vos rêves ici",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 40,
-                          color: textColor1,
-                          height: 1.2),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 40,
+                        color: textColor1,
+                        height: 1.2,
+                      ),
                     ),
                     const SizedBox(height: 25),
                     Text(
-                      "Explore all the most exiting jobs roles\nbased on your interest And study major",
+                      "Explorez tous les postes les plus passionnants\nselon vos intérêts et votre spécialité d'étude",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
@@ -62,9 +63,7 @@ class MySplashScreen extends StatelessWidget {
                     ),
                     SizedBox(height: size.height * 0.07),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 30),
                       child: Container(
                         height: size.height * 0.08,
                         width: size.width,
@@ -105,7 +104,7 @@ class MySplashScreen extends StatelessWidget {
                                   ),
                                   child: Center(
                                     child: Text(
-                                      "Register",
+                                      "S'inscrire",
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 20,
@@ -126,7 +125,7 @@ class MySplashScreen extends StatelessWidget {
                                   );
                                 },
                                 child: Text(
-                                  "Sign In",
+                                  "Se connecter",
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 20,

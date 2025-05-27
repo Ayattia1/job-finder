@@ -224,37 +224,6 @@ void _showErrorDialog(String message) {
                       ),
                     ),
                     SizedBox(height: size.height * 0.06),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          height: 2,
-                          width: size.width * 0.2,
-                          color: Colors.black12,
-                        ),
-                        Text(
-                          "  ou continuez avec   ",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: textColor2,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Container(
-                          height: 2,
-                          width: size.width * 0.2,
-                          color: Colors.black12,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: size.height * 0.06),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        socialIcon("images/google.png"),
-                      ],
-                    ),
-                    SizedBox(height: size.height * 0.07),
                     Text.rich(
                       TextSpan(
                         text: "Vous n'êtes pas membre ? ",
